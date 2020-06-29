@@ -9,12 +9,16 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/swag"
 
+	"github.com/matbot/todoGolangSwagger/models"
 	"github.com/matbot/todoGolangSwagger/restapi/operations"
 	"github.com/matbot/todoGolangSwagger/restapi/operations/todos"
 )
 
 //go:generate swagger generate server --target ../../todoGolangSwagger --name TodoList --spec ../swagger.yml
+var items = make(map[int64]*models.Item)
+var lastID int64
 
 func configureFlags(api *operations.TodoListAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
@@ -33,6 +37,24 @@ func configureAPI(api *operations.TodoListAPI) http.Handler {
 	api.JSONConsumer = runtime.JSONConsumer()
 
 	api.JSONProducer = runtime.JSONProducer()
+
+	api.TodosFindTodosHandler = todos.FindTodosHandlerFunc(func(params todos.FindTodosParams) middleware.Responder {
+		mergedParams := todos.NewFindTodosParams()
+		mergedParams.Since = swag.Int64(0)
+		if params.Since != nil {
+			mergedParams.Since = params.Since
+		}
+		if params.Limit != nil {
+			mergedParams.Limit = params.Limit
+		}
+		return todos.NewFindTodosOK().WithPayload(allItems(*mergedParams.Since, *mergedParams.Limit))
+	})
+	api.TodosUpdateOneHandler = todos.UpdateOneHandlerFunc(func(params todos.UpdateOneParams) middleware.Responder {
+		if err := updateItem(params.ID, params.Body); err != nil {
+			return todos.NewUpdateOneDefault(500).WithPayload(&models.Error{Code: 500, Message: swag.String(err.Error())})
+		}
+		return todos.NewUpdateOneOK().WithPayload(params.Body)
+	})
 
 	if api.TodosFindTodosHandler == nil {
 		api.TodosFindTodosHandler = todos.FindTodosHandlerFunc(func(params todos.FindTodosParams) middleware.Responder {
