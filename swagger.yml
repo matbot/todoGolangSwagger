@@ -36,9 +36,6 @@ paths:
           schema:
             $ref: "#/definitions/error"
     delete:
-      # elided for brevity
-  /{id}:
-    delete:
       tags:
         - todos
       operationId: destroyOne

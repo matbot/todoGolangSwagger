@@ -52,6 +52,9 @@ func NewTodoListAPI(spec *loads.Document) *TodoListAPI {
 		TodosFindTodosHandler: todos.FindTodosHandlerFunc(func(params todos.FindTodosParams) middleware.Responder {
 			return middleware.NotImplemented("operation todos.FindTodos has not yet been implemented")
 		}),
+		TodosUpdateOneHandler: todos.UpdateOneHandlerFunc(func(params todos.UpdateOneParams) middleware.Responder {
+			return middleware.NotImplemented("operation todos.UpdateOne has not yet been implemented")
+		}),
 	}
 }
 
@@ -91,6 +94,8 @@ type TodoListAPI struct {
 	TodosDestroyOneHandler todos.DestroyOneHandler
 	// TodosFindTodosHandler sets the operation handler for the find todos operation
 	TodosFindTodosHandler todos.FindTodosHandler
+	// TodosUpdateOneHandler sets the operation handler for the update one operation
+	TodosUpdateOneHandler todos.UpdateOneHandler
 	// ServeError is called when an error is received, there is a default handler
 	// but you can set your own with this
 	ServeError func(http.ResponseWriter, *http.Request, error)
@@ -165,6 +170,9 @@ func (o *TodoListAPI) Validate() error {
 	}
 	if o.TodosFindTodosHandler == nil {
 		unregistered = append(unregistered, "todos.FindTodosHandler")
+	}
+	if o.TodosUpdateOneHandler == nil {
+		unregistered = append(unregistered, "todos.UpdateOneHandler")
 	}
 
 	if len(unregistered) > 0 {
@@ -266,6 +274,10 @@ func (o *TodoListAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"][""] = todos.NewFindTodos(o.context, o.TodosFindTodosHandler)
+	if o.handlers["PUT"] == nil {
+		o.handlers["PUT"] = make(map[string]http.Handler)
+	}
+	o.handlers["PUT"]["/{id}"] = todos.NewUpdateOne(o.context, o.TodosUpdateOneHandler)
 }
 
 // Serve creates a http handler to serve the API over HTTP
